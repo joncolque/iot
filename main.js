@@ -54,11 +54,23 @@ connectionMQTT()
 /*****************************************************************************/
 var express = require('express');
 var app = express();
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ port: 8080 });
 
 app.get('/', function (req, res) {
-  res.send(`NOVEDAD ${msj[0]} ${msj[1]}`);
+  // res.send(`NOVEDAD ${msj[0]} ${msj[1]}`);
+  wss.on('connection', function connection(ws) {
+    ws.on('message', function incoming(message) {
+      console.log('received: %s', message);
+    });
+   
+    ws.send(`NOVEDAD ${msj[0]} ${msj[1]}`);
+  });
 });
 
 app.listen(3000, function () {
   console.log('Example app listening on port 3000!');
 });
+/******************************************************************************/
+ 
+ 
