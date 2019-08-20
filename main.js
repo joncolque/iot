@@ -1,52 +1,67 @@
 var mqtt = require('mqtt');
 //var clear = require('clear');
-
 var client  = mqtt.connect('mqtt://20.1.2.123');
-
-var novedades = "planta/circulo/topadora/estado";
+var novedades = "planta/#";
+var estado = "planta/circulo/topadora/estado"
+var buscador = "planta/circulo/topadora/buscador"
 var rfid = "planta/circulo/rfid/id";
 var autorizacion = "planta/circulo/rfid/autorizacion";
 var emergencia = "planta/detectores/humo";
 
+var refresco = 10
+
 var data = require("./json/tag.json");
 
-var msj = new Array(2);
-var first = true
+//var msj = new Array(2);
+var first = true;
+var x = Date.now();
 
 function connectionMQTT() {
   client.on('connect', function () {
       client.subscribe(emergencia, function (err) {
         if (!err) {
-          client.publish(novedades, 'Integrador activo.');
+          client.publish(estado, 'Integrador activo.');
         }
       })
-      client.subscribe(rfid);
+      client.subscribe(novedades);
+      //client.subscribe(rfid);
     })
 
   client.on('message', function (topic, message) {
-    if(first){
-      console.log("\n");
-      console.log("\t| TOPICO \t\t\t| MENSAJE \t");
-      console.log("       \t|              \t\t|       \t");
-      first = false;
+    var y = Date.now();
+    var tiempo = y - x
+    /*
+    if(tiempo > (refresco*1000)){
+      console.log('\033[2J');
+      x = y;
+    }else{
+      x = y;
     }
-    // message is Buffer
-    msj[0] = topic.toString();
-    msj[1] = message.toString();
-    var long = Object.keys(data.cube.authorized).length
-    for(var i = 0; i <= long; i++){
-      if(i == long){
-        console.log("NOVEDAD\t|",msj[0],"\t| OBJ. DESCONOCIDO\t");
-        break;
+    */
+    function table(Topico, Mensaje) {
+      this.Topico = Topico;
+      this.Mensaje = Mensaje;
+    }
+    var row = new table(topic.toString(), message.toString());
+    console.table([row])
+    if(rfid == topic.toString()){
+      var long = Object.keys(data.cube.authorized).length
+      for(var i = 0; i < long; i++){
+        if(message.toString() == data.cube.authorized[i]){
+          var row = new table(topic.toString(), 'OBJ. AUTORIZADO');
+          console.table([row]);
+          client.publish(autorizacion, '3');
+          break;
+        };
+        var row = new table(topic.toString(), 'OBJ. DESCONOCIDO');
+        console.table([row]);
+        client.publish(autorizacion, '2');
       }
-      if(msj[1] == data.cube.authorized[i]){
-        console.log("NOVEDAD\t|",msj[0],"\t| OBJ. CONOCIDO\t");
-        client.publish(autorizacion, '3');
-        break;
-      };
     }
+    /*
     // clear();
     //client.end()
+    */
   })
 }
 
